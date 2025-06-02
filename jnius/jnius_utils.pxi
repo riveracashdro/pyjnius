@@ -28,9 +28,11 @@ cdef parse_definition(definition):
 
         # java class
         if c == 'L':
-            c, argdef = argdef.split(';', 1)
-            args.append(prefix + c + ';')
+            # Preserve the full class path including any array prefix
+            class_name, argdef = argdef.split(';', 1)
+            args.append(prefix + 'L' + class_name + ';')
             continue
+ 
 
         raise Exception('Invalid "{}" character in definition "{}"'.format(
             c, definition[1:]))
@@ -38,7 +40,7 @@ cdef parse_definition(definition):
     return ret, tuple(args)
 
 
-cdef void check_exception(JNIEnv *j_env) except *:
+cdef int check_exception(JNIEnv *j_env) except -1:
     cdef jmethodID toString = NULL
     cdef jmethodID getCause = NULL
     cdef jmethodID getStackTrace = NULL
@@ -76,7 +78,17 @@ cdef void check_exception(JNIEnv *j_env) except *:
             j_env[0].DeleteLocalRef(j_env, e_msg)
         j_env[0].DeleteLocalRef(j_env, exc)
 
-        raise JavaException('JVM exception occurred: %s' % (str(pyexcclass) + ": " + pymsg if pymsg is not None else pyexcclass), pyexcclass, pymsg, pystack)
+           ...
+        raise JavaException(
+            'JVM exception occurred: %s' % (
+                str(pyexcclass) + ": " + pymsg if pymsg is not None else pyexcclass
+            ),
+            pyexcclass, pymsg, pystack
+        )
+    # return -1  ← innecesario después de raise
+
+        return 0  # Esto debe estar en el lugar adecuado, asegúrate de que está dentro de la función.
+
 
 
 cdef void _append_exception_trace_messages(
